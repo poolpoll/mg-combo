@@ -1,0 +1,201 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../mg-input/mg-input.html">
+
+<dom-module id="mg-combo">
+	<template>
+		<style>
+			.outer-container {
+				background-color: #FFFFFF;
+				padding: 2% 3% 0 3%;
+				border: 2px solid;
+				border-color: #CBCCCB;
+				border-radius: 5px;
+				overflow-y: auto;
+				position: absolute;
+				left: 4%; right: 4%;
+			}
+			#combo-list {
+				display: flex;
+				flex-direction: column;
+			}
+			#item {
+				font-size: 12px;
+				padding: 2%;
+			}
+		</style>
+		<mg-input id="input" label="[[label]]" readonly="true" on-tap="_comboTapped" placeholder="{{defaultDisplayValue}}" label="[[label]]" value="[[selectedItem]]"></mg-input>
+		<div id="outer-container" class="outer-container" hidden>
+			<div id="combo-list">
+				<template is="dom-repeat" items="[[modifiedItems]]">
+					<span id="item" on-mouseover="_mouseOverItem" on-mouseout="_mouseOutItem" on-tap="_itemSelected" value="[[item.selectedValue]]">
+					 [[item.displayValue]]
+				 </span>
+				</template>
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is: 'mg-combo',
+
+			properties: {
+				/**
+				 * combo list 숨길지 여부를 결정
+				 * @type Boolean
+				 */
+				hideComboList: {
+					type: Boolean,
+					value: true
+				},
+
+				/**
+				 * input의 label 속성 
+				 * @type String
+				 */
+				label: {
+					type: String,
+					value: 'Combo'
+				},
+
+				/**
+				 * 초기에 나타나는 값 input의 placeholder 값
+				 * @type {Object}
+				 */
+				defaultDisplayValue: {
+					type: String,
+					value: 'Select Item'
+				},
+
+				/**
+				 * combo list의 대상이 되는 items
+				 * displayProp, valueProp가 적용되기 이전
+				 * @type Array
+				 */
+				items: {
+					type: Array,
+					observer: '_itemsChanged'
+				},
+
+				/**
+				 * item을 선택하였을때 화면에 보여줄 property
+				 * 해당 값을 정의하면 items의 각 오브젝트에서 displayProp에 해당 하는 값을 화면에
+				 * 나타나도록 setModifiedItems 함수를 통해 구성함
+				 * @type String
+				 */
+				displayProp: {
+					type: String,
+					value: 'name'
+				},
+
+				/**
+				 * item을 선택하였을때 서버로 전달할 property
+				 * 해당 값을 정의하면 items의 각 오브젝트에서 valueProp에 해당 하는 값을 선택되어
+				 * 나타나도록 setModifiedItems 함수를 통해 구성함
+				 * @type String
+				 */
+				valueProp: {
+					type: String,
+					value: 'value'
+				},				
+
+				/**
+				 * setModifiedItems 함수를 통해 displayProp, valueProp가
+				 * 적용된 items
+				 * @type Array
+				 */
+				modifiedItems: {
+					type: Array
+				},
+
+				/**
+				 * combo list가 포함되는 box의 길이를 정의 단위 까지 입력받는다.
+				 * @type String
+				 */
+				boxHeight: {
+					type: String,
+					observer: '_boxHeightChanged'
+				},
+
+				/**
+				 * combo list 아이템의 마우스 오버 발생시 나타날 색상을 정의
+				 */
+				softSelectColor: {
+					type: String,
+					value: '#CBCCCB'
+				}
+			},
+
+			/**
+			 * items가 변경되면 setModifiedItems를 호출하여 modifiedItems를 구성함
+			 * @param  Array items
+			 */
+			_itemsChanged: function(items) {
+				this.setModifiedItems(items);
+			},
+
+			/**
+			 * items를 전달 받아 displayProp와 valueProp가 적용된
+			 * modifiedItems를 구성함
+			 * @param Array items
+			 */
+			setModifiedItems: function(items) {
+				var preModifiedItems = items;
+				preModifiedItems.forEach(function(item) {
+					item.displayValue = item[this.displayProp];
+					item.selectedValue = item[this.valueProp];
+				}.bind(this));
+
+				this.modifiedItems = preModifiedItems;
+			},
+
+			/**
+			 * combo box 선택시 combo list를 toggle함
+			 * @param  Object event
+			 */
+			_comboTapped: function(event) {
+				this.hideComboList = !this.hideComboList;
+				if(this.hideComboList) {
+					this.$['outer-container'].setAttribute('hidden', true);
+				} else {
+					this.$['outer-container'].removeAttribute('hidden');
+				}
+			},
+
+			/**
+			 * combo list의 각 아이템들에 마우스 hover시 발생
+			 * 현재 마우스 포인트가 올라가 있는 item의 색상을 변경함
+			 * @param  Object event
+			 */
+			_mouseOverItem: function(event) {
+				event.target.style.setProperty('background-color', this.softSelectColor);
+			},
+
+			/**
+			 * combo list의 각 아이템들에 마우스 아웃시 발생
+			 * softSelectColor를 초기화
+			 * @param  Object event
+			 */
+			_mouseOutItem: function(event) {
+				// TODO: 프로그래밍 적으로 색상 원복
+				event.target.style.setProperty('background-color', '');
+			},
+
+			/**
+			 * combo list의 아이템 선택시 발생 콤보 박스를 토글하고 선택한 아이템의 값을 mg-input의 value에 set
+			 * @param  Object event
+			 */
+			_itemSelected: function(event) {
+				this._comboTapped();
+				this.selectedItem = event.target.value;
+			},
+
+			/**
+			 * combo box의 높이가 변경되면 호출되어 box의 높이를 셋팅함
+			 * @param  String boxHeight
+			 */
+			_boxHeightChanged: function(boxHeight) {
+				this.$['outer-container'].style.setProperty('height', boxHeight);
+			}
+		})
+	</script>
+</dom-module>
