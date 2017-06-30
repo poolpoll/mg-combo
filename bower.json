@@ -15,6 +15,7 @@
     "tests"
   ],
   "dependencies": {
-    "polymer": "polymer/polymer#^1.9.2"
+    "polymer": "polymer/polymer#^1.9.2",
+    "mg-input": "possible819/mg-input#^1.0.0"
   }
 }
